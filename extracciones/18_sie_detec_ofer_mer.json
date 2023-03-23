@@ -1,0 +1,13 @@
+[
+{"descripción": ["Total"], "f_2019": ["8,811.054"], "f_2020": ["7,826.606"]},
+{"descripción": ["Carbón y coque de carbón"], "f_2019": ["541.493"], "f_2020": ["239.368"]},
+{"descripción": ["Crudo y petrolíferos"], "f_2019": ["3,261.142"], "f_2020": ["2,841.372"]},
+{"descripción": ["Gas natural y condensados"], "f_2019": ["4,227.173"], "f_2020": ["3,843.583"]},
+{"descripción": ["Nuclear"], "f_2019": ["124.820"], "f_2020": ["125.621"]},
+{"descripción": ["Renovables"], "f_2019": ["661.125"], "f_2020": ["762.224"]},
+{"descripción": ["Biogás"], "f_2019": ["2.799"], "f_2020": ["2.529"]},
+{"descripción": ["Hidro"], "f_2019": ["84.990"], "f_2020": ["96.967"]},
+{"descripción": ["Geo, eólica, solar"], "f_2019": ["213.420"], "f_2020": ["235.320"]},
+{"descripción": ["Biomasa"], "f_2019": ["359.920"], "f_2020": ["429.937"]},
+{"descripción": ["Comercio neto de electricidad"], "f_2019": ["-4.700"], "f_2020": ["14.438"]}
+]
