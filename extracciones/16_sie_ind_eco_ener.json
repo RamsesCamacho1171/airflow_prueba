@@ -1,0 +1,12 @@
+[
+{"descripción": ["Consumo nacional de energía (petajoules)"], "unidad": ["PJ"], "f_2019": ["8,811.055"], "f_2020": ["7,826.606"]},
+{"descripción": ["PIB nacional (miles de millones de pesos de 2013)1"], "unidad": ["$"], "f_2019": ["18,509.940"], "f_2020": ["16,951.218"]},
+{"descripción": ["Población nacional (millones de habitantes)2"], "unidad": ["pna"], "f_2019": ["125.929"], "f_2020": ["127.092"]},
+{"descripción": ["Intensidad energética (KJ/$ producido)"], "unidad": ["Num"], "f_2019": ["476.017"], "f_2020": ["461.713"]},
+{"descripción": ["Consumo per cápita de energía (GJ/hab.)"], "f_2019": ["69.968"], "f_2020": ["61.582"]},
+{"descripción": ["Consumo de electricidad (GWh)"], "unidad": ["GWh"], "f_2019": ["284,214.999"], "f_2020": ["282,210.023"]},
+{"descripción": ["Consumo de electricidad per cápita (kWh/hab.)"], "unidad": ["Num"], "f_2019": ["2,256.938"], "f_2020": ["2,220.524"]},
+{"descripción": ["Producción (petajoules)"], "unidad": ["PJ"], "f_2019": ["6,332.812"], "f_2020": ["6,784.700"]},
+{"descripción": ["Oferta interna bruta (petajoules)"], "f_2019": ["8,811.055"], "f_2020": ["7,826.606"]},
+{"descripción": ["Relación producción entre oferta interna bruta"], "unidad": ["Num"], "f_2019": ["0.719"], "f_2020": ["0.867"]}
+]
