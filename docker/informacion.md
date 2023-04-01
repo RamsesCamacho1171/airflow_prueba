@@ -233,3 +233,182 @@ lo que nos indican los caracteres es:
 
     * && indica la separacion entre cada instruccion
     * \ nos indica un salto de linea
+
+## CMD
+
+Solo puede existir un cmd en un docker file que es para ejecutar comandos.
+Ejecutan una shell (bin/bash)
+
+ejemplo:
+
+```
+FROM ubuntu
+RUN apt-get update
+RUN apt-get install -y python3
+RUN echo 1.0 >> /etc/version && apt-get install -y git \
+    && apt-get install -y iputils-ping
+CMD echo "bienvenido papu"
+```
+
+en este caso tenemos lo mismo del ejemplo anterior, pero añadimos el cmd, lo que indica que ejecutara el comando que mostrara el "bienvenido papu".
+
+este comando se ejecuta creando una shell
+
+otro ejemplo
+
+```
+FROM ubuntu
+RUN apt-get update
+RUN apt-get install -y python3
+RUN echo 1.0 >> /etc/version && apt-get install -y git \
+    && apt-get install -y iputils-ping
+CMD ["echo","Hola bebe"]
+```
+
+en este caso la unica diferencia es que a la hora de ejecutar no depende de una shell
+
+por lo que entendi es que ejecuta directamente el comando y no atravez de una bash
+
+otro ejemplo:
+
+```
+FROM ubuntu
+RUN apt-get update
+RUN apt-get install -y python3
+RUN echo 1.0 >> /etc/version && apt-get install -y git \
+    && apt-get install -y iputils-ping
+CMD /bin/bash
+```
+
+lo que tenemos aqui es que le estamos indicando que cuando ejecutemos el contenedor nos corra la bash, pero esto en teoria esta mal.
+
+con el comando docker image history **<nombre:imagen>** podemos ver los cambios de nuestras imagenes, veamos el cambio de la imagen creada:
+
+```
+docker image history image:v1
+IMAGE          CREATED         CREATED BY                                      SIZE      COMMENT
+9b96cfea49db   2 minutes ago   /bin/sh -c #(nop)  CMD ["/bin/sh" "-c" "/bin…   0B
+640c5bd8e762   3 days ago      /bin/sh -c echo 1.0 >> /etc/version && apt-g…   75MB
+c628dd3ecc13   4 days ago      /bin/sh -c apt-get install -y python3           30MB
+c18bad246d1f   4 days ago      /bin/sh -c apt-get update                       42.4MB
+6b7dfa7e8fdb   3 months ago    /bin/sh -c #(nop)  CMD ["bash"]                 0B
+<missing>      3 months ago    /bin/sh -c #(nop) ADD file:481dd2da6de715252…   77.8MB
+```
+
+lo que hace el ultimo punto es llamar desde el /bin/bash -c a otra vez al /bin/bash, estamos llamando a una bash desde una shell y eso estaria mal. lo ideal habria sido ponerlo en formato json como el de la penultima linea.(en este caso funciona igual, pero en otro caso podria dar algun error)
+
+entonces seria:
+
+```
+FROM ubuntu
+RUN apt-get update
+RUN apt-get install -y python3
+RUN echo 1.0 >> /etc/version && apt-get install -y git \
+    && apt-get install -y iputils-ping
+CMD ["/bin/bash"]
+
+
+docker image history image:v1
+IMAGE          CREATED         CREATED BY                                      SIZE      COMMENT
+5853105f6e49   3 seconds ago   /bin/sh -c #(nop)  CMD ["/bin/bash"]            0B
+640c5bd8e762   3 days ago      /bin/sh -c echo 1.0 >> /etc/version && apt-g…   75MB
+c628dd3ecc13   4 days ago      /bin/sh -c apt-get install -y python3           30MB
+c18bad246d1f   4 days ago      /bin/sh -c apt-get update                       42.4MB
+6b7dfa7e8fdb   3 months ago    /bin/sh -c #(nop)  CMD ["bash"]                 0B
+<missing>      3 months ago    /bin/sh -c #(nop) ADD file:481dd2da6de715252…   77.8MB
+```
+
+## ENTRYPOINT
+
+ejecuta algo cuando corremos el contendor al igual que el cmd, pero a diferencia de cmd nos permite "blindar" ese comando, es decir cuando se corra el contenedor se ejecute siempre. Con cmd no pasa eso.
+
+**nota**
+Si nostros ponemos a la hora de correr un contenedor= docker run -it --rm image:v2 ls
+estariamos sustituyendo el comando que asignamos(en este caso bash) por ls:
+
+```
+docker run -it --rm image:v2 ls
+bin   dev  home  lib32  libx32  mnt  proc  run   srv  tmp  var
+boot  etc  lib   lib64  media   opt  root  sbin  sys  usr
+```
+
+Esto solo pasa cuando utilizamos cmd, con entrypoit no.
+
+```
+FROM ubuntu
+RUN apt-get update
+RUN apt-get install -y python3
+RUN echo 1.0 >> /etc/version && apt-get install -y git \
+    && apt-get install -y iputils-ping
+ENTRYPOINT ["/bin/bash"]
+
+este solo se debe ejecuta en formato json. Se puede en formato shell, pero no lo hagas
+```
+
+**nota** puedes poner
+
+```
+docker rmi ==> docker image rm
+```
+
+ejecucion de contenedor sobrescribiendo:
+
+```
+docker run -it --rm image:v2 ls
+/usr/bin/ls: /usr/bin/ls: cannot execute binary file
+```
+
+le esta concatenando el ls a nuestro comando ya predefinido
+
+ejemplo:
+
+```
+FROM ubuntu
+RUN apt-get update
+RUN apt-get install -y python3
+RUN echo 1.0 >> /etc/version && apt-get install -y git \
+    && apt-get install -y iputils-ping
+ENTRYPOINT ["df"]
+```
+
+si corremos el contenedor y añadimos por ejemplo --help el resultado es:
+
+```
+docker run -it --rm image:v2 --help
+Usage: df [OPTION]... [FILE]...
+Show information about the file system on which each FILE resides,
+or all file systems by default.
+
+Mandatory arguments to long options are mandatory for short options too.
+  -a, --all             include pseudo, duplicate, inaccessible file systems
+  -B, --block-size=SIZE  scale sizes by SIZE before printing them; e.g.,
+                           '-BM' prints sizes in units of 1,048,576 bytes;
+                           see SIZE format below
+  -h, --human-readable  print sizes in powers of 1024 (e.g., 1023M)
+  -H, --si              print sizes in powers of 1000 (e.g., 1.1G)
+  -i, --inodes          list inode information instead of block usage
+  -k                    like --block-size=1K
+  -l, --local           limit listing to local file systems
+      --no-sync         do not invoke sync before getting usage info (default)
+      --output[=FIELD_LIST]  use the output format defined by FIELD_LIST,
+                               or print all fields if FIELD_LIST is omitted.
+  -P, --portability     use the POSIX output format
+      --sync            invoke sync before getting usage info
+      --total           elide all entries insignificant to available space,
+                          and produce a grand total
+  -t, --type=TYPE       limit listing to file systems of type TYPE
+  -T, --print-type      print file system type
+  -x, --exclude-type=TYPE   limit listing to file systems not of type TYPE
+  -v                    (ignored)
+      --help     display this help and exit
+      --version  output version information and exit
+```
+
+cocatena al df nuestro --help
+
+```
+docker run -it --rm image:v2 siuuu
+df: siuuu: No such file or directory
+```
+
+Entonces con cmd podemos modificar ese comando de arranque, con entrypoint nos ata a ese comando.
