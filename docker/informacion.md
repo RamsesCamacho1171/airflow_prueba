@@ -186,9 +186,15 @@ docker commit <contenedor> <nombre_imagen> -> docker commit ubu1 mi_ubuntu
 cuando creamos una nueva imagen se añaden mas layer, en este caso como ubuntu tenia 1, ahora se le añade el otro layer que teniamos para agregar mas cosas,
 entonces cuando creemos nuevas imagenes basadas en esta, los contenedores apuntaran a esta. Cabe aclarar que el crear imagenes si hace que ocupemos mas espacio en memoria.
 
+#
+
 ## dockerfile
 
 Lo ideal para crear imagenes nuevas es utilizar un dockerfile, ya que si las creamos en consola no tendremos un control preciso de los cambios realizados, ademas no podremos contar con un control de versiones de nuestras imagenes.
+
+## RUN
+
+ejecuta un comando durante el proceso build y crea una nueva capa en la Docker Image.
 
 un ejemplo sencillo es el siguiente:
 
@@ -233,6 +239,8 @@ lo que nos indican los caracteres es:
 
     * && indica la separacion entre cada instruccion
     * \ nos indica un salto de linea
+
+#
 
 ## CMD
 
@@ -317,6 +325,8 @@ c18bad246d1f   4 days ago      /bin/sh -c apt-get update                       4
 6b7dfa7e8fdb   3 months ago    /bin/sh -c #(nop)  CMD ["bash"]                 0B
 <missing>      3 months ago    /bin/sh -c #(nop) ADD file:481dd2da6de715252…   77.8MB
 ```
+
+#
 
 ## ENTRYPOINT
 
@@ -412,3 +422,196 @@ df: siuuu: No such file or directory
 ```
 
 Entonces con cmd podemos modificar ese comando de arranque, con entrypoint nos ata a ese comando.
+
+#
+
+## combinar entrypoint CMD
+
+ejem:
+
+```
+FROM ubuntu
+RUN apt-get update
+RUN apt-get install -y python3
+RUN echo 1.0 >> /etc/version && apt-get install -y git \
+    && apt-get install -y iputils-ping
+ENTRYPOINT ["ping","-c","3"]
+CMD ["localhost"]
+
+va a ejecutar un ping cada 3 seg a localhost
+
+docker run --rm image:v2
+PING localhost (127.0.0.1) 56(84) bytes of data.
+64 bytes from localhost (127.0.0.1): icmp_seq=1 ttl=64 time=0.014 ms
+64 bytes from localhost (127.0.0.1): icmp_seq=2 ttl=64 time=0.038 ms
+64 bytes from localhost (127.0.0.1): icmp_seq=3 ttl=64 time=0.036 ms
+
+--- localhost ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2047ms
+rtt min/avg/max/mdev = 0.014/0.029/0.038/0.010 ms
+
+```
+
+si es posible modificar el entrypoint.
+
+```
+docker run --rm --entrypoint date image:v2
+Thu Apr  6 03:29:04 UTC 2023
+```
+
+lo ideal es que no lo hagas, pero si es posible.
+
+#
+
+### WORKDIR
+
+en pocas palabras es como un cd, se mueve a la direccion que tu le pases.
+
+```
+FROM ubuntu
+RUN apt-get update
+RUN apt-get install -y python3
+RUN echo 1.0 >> /etc/version && apt-get install -y git \
+    && apt-get install -y iputils-ping
+
+RUN mkdir /datos
+WORKDIR /datos
+RUN touch f1.txt
+RUN mkdir /datos1
+WORKDIR /datos1
+RUN touch f2.txt
+ENTRYPOINT [ "/bin/bash" ]
+```
+
+los comandos que vayamos ejecuantdo despues (RUN,CMD,ENTRYPOINT,etc) se ejecutaran dentro del directorio
+
+```
+docker run -it --rm image:v3
+root@72c4694edb63:/datos1# cd ..
+root@72c4694edb63:/# ls
+bin   datos   dev  home  lib32  libx32  mnt  proc  run   srv  tmp  var
+boot  datos1  etc  lib   lib64  media   opt  root  sbin  sys  usr
+root@72c4694edb63:/# cd datos
+root@72c4694edb63:/datos# ls
+f1.txt
+root@72c4694edb63:/datos# cd ..
+root@72c4694edb63:/# cd datos1
+root@72c4694edb63:/datos1# ls
+f2.txt
+root@72c4694edb63:/datos1#
+```
+
+esto tiene mas usos y ya se veran despues.
+
+#
+
+## COPY
+
+este comando nos permite copiar archivos de nuestra maquina a la imagen:
+
+```
+FROM ubuntu
+RUN apt-get update
+RUN apt-get install -y python3
+RUN echo 1.0 >> /etc/version && apt-get install -y git \
+    && apt-get install -y iputils-ping
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.5 \
+    python3-pip \
+    && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+#WORKDIR
+RUN mkdir /datos
+WORKDIR /datos
+RUN touch f1.txt
+RUN mkdir /datos1
+WORKDIR /datos1
+RUN touch f2.txt
+#COPY
+COPY a.py .
+#ENTRYPOINT
+ENTRYPOINT [ "python3","a.py" ]
+
+docker run -it --rm image:v4
+hola
+
+```
+
+para este ejemplo isntalamos python en el contenedor. Le pasamos un archivo de python alojado a misma altura del docker file y lo guarda en el punto actual que se haya quedado, en este caso en datos 1. al final con entrypoint corremos nuestro archivo.
+
+podemos ver que si paso todo esto si forzamos el entrypoint y entramos en la imagen:
+
+```
+docker run -it --rm --entrypoint /bin/bash image:v4
+root@1e2f30085163:/datos1# ls
+a.py  f2.txt
+root@1e2f30085163:/datos1# python3 a.py
+hola
+root@1e2f30085163:/datos1#
+
+```
+
+#
+
+## ADD
+
+Es parecido al COPY, pero por lo que entedi podemos pasar archivos .tar que es como un .rar o .zip. Con copy segun al copiarlos los desempaqueta. Tambien puede copiar cosas de urls.
+
+```
+FROM ubuntu
+RUN apt-get update
+RUN apt-get install -y python3
+RUN echo 1.0 >> /etc/version && apt-get install -y git \
+    && apt-get install -y iputils-ping
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.5 \
+    python3-pip \
+    && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+#WORKDIR
+RUN mkdir /datos
+WORKDIR /datos
+RUN touch f1.txt
+RUN mkdir /datos1
+WORKDIR /datos1
+RUN touch f2.txt
+#ADD
+
+ADD a.py .
+ADD DockerFiles docker
+ADD https://datosabiertos.impi.gob.mx/IMPICifras/Invenciones16.csv /datos/
+#ENTRYPOINT
+ENTRYPOINT [ "python3","a.py" ]
+```
+
+resultado:
+
+```
+docker run -it --rm --entrypoint /bin/bash image:v5
+root@154418619a71:/datos1# ls
+a.py  docker  f2.txt
+root@154418619a71:/datos1# cd docker/
+root@154418619a71:/datos1/docker# ls
+Dockerfile1  Dockerfile2
+root@154418619a71:/datos1/docker# cd ..
+root@154418619a71:/datos1# cd ..
+root@154418619a71:/# cd datos
+root@154418619a71:/datos# ls
+Invenciones16.csv  f1.txt
+root@154418619a71:/datos#
+```
+
+asi se ve la descraga en la consola:
+
+```
+Step 13/15 : ADD DockerFiles docker
+ ---> 877a12fdb30d
+Step 14/15 : ADD https://datosabiertos.impi.gob.mx/IMPICifras/Invenciones16.csv /datos/
+Downloading [==================================================>]  1.381kB/1.381kB
+
+ ---> 96b2d98947c2
+Step 15/15 : ENTRYPOINT [ "python3","a.py" ]
+```
